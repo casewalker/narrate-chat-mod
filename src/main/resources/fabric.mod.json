@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "narratechatmod",
+  "version": "${version}",
+
+  "name": "Narrate Chat Mod",
+  "description": "Force Minecraft to narrate all text which comes through the chat regardless of what the message type is.",
+  "authors": [
+    "case_walker"
+  ],
+  "contact": {
+    "homepage": "https://casebwalker.net"
+  },
+
+  "license": "MIT",
+  "icon": "assets/narratechatmod/icon.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "com.casewalker.narratechat.NarrateChatMod"
+    ]
+  },
+  "mixins": [
+    "narratechatmod.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "fabric": "*",
+    "minecraft": "1.17.x",
+    "java": ">=16"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
