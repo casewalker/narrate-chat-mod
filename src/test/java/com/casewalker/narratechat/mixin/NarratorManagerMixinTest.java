@@ -62,7 +62,7 @@ class NarratorManagerMixinTest {
     @BeforeAll
     static void initializeDependencies() {
         config.initialize(List.of(Path.of("src", "test", "resources", "narratechatmod.json")));
-        Whitebox.setInternalState(narratorManagerMixin, "config", config);
+        Whitebox.setInternalState(narratorManagerMixin, "configNCM2", config);
     }
 
     @BeforeEach
