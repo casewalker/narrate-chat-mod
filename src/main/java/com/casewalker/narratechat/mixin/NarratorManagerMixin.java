@@ -68,9 +68,9 @@ public abstract class NarratorManagerMixin implements Reloadable {
     abstract void debugPrintMessage(String var1);
 
     /**
-     * Handler for the mod configuration.
+     * Handler for the mod configuration. Make the name distinct from the field in the "Narrator Configs Mod".
      */
-    private ConfigHandler<NarrateChatModConfig> config;
+    private ConfigHandler<NarrateChatModConfig> configNCM2;
 
     /**
      * Inject custom logic at the end of {@link NarratorManager#NarratorManager()} in order to initialize the config.
@@ -81,9 +81,9 @@ public abstract class NarratorManagerMixin implements Reloadable {
     public void onInit(final CallbackInfo ci) {
         LOGGER.info("This line is printed by the Narrate Chat Mod mixin!");
 
-        config = new ConfigHandler<>(NarrateChatModConfig.class);
-        config.initialize();
-        config.registerSubscriber(this);
+        configNCM2 = new ConfigHandler<>(NarrateChatModConfig.class);
+        configNCM2.initialize();
+        configNCM2.registerSubscriber(this);
     }
 
     /**
@@ -104,7 +104,7 @@ public abstract class NarratorManagerMixin implements Reloadable {
             final CallbackInfo ci) {
 
         // If the mod is not enabled, exit
-        if (!config.get().isModEnabled()) {
+        if (!configNCM2.get().isModEnabled()) {
             return;
         }
 
@@ -131,9 +131,9 @@ public abstract class NarratorManagerMixin implements Reloadable {
     @Override
     public void reload() {
         if (!narrator.active()) {
-            debugPrintMessage("Updated configuration: " + config.get());
+            debugPrintMessage("Updated configuration: " + configNCM2.get());
         } else {
-            narrator.say("Updated configuration: " + config.get(), false);
+            narrator.say("Updated configuration: " + configNCM2.get(), false);
         }
     }
 }
