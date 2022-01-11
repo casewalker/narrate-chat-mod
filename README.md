@@ -12,7 +12,8 @@ narrated. The "_Narrates System_" option narrates a large amount of system messa
 pass through the chat interface. A fourth option of narration could be to narrate all chat interface messages, whether
 they are public chat messages from users or whispers or system messages.
 
-This mod (when enabled) should behave like that fourth option.
+This mod (when enabled) should behave like that fourth option. Note that this mod is built on top of 
+[Fabric](https://fabricmc.net/).
 
 ## Configuration
 
