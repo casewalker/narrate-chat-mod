@@ -23,10 +23,9 @@
  */
 package com.casewalker.narratechat.mixin;
 
-import com.casewalker.narratechat.config.NarrateChatModConfig;
-import com.casewalker.modutils.config.ConfigHandler;
-import com.casewalker.modutils.interfaces.Reloadable;
+import com.casewalker.narratechat.util.Util;
 import com.mojang.text2speech.Narrator;
+import net.minecraft.client.option.NarratorMode;
 import net.minecraft.client.util.NarratorManager;
 import net.minecraft.network.MessageType;
 import net.minecraft.text.Text;
@@ -59,7 +58,7 @@ import static com.casewalker.narratechat.NarrateChatMod.LOGGER;
  * @author Case Walker
  */
 @Mixin(NarratorManager.class)
-public abstract class NarratorManagerMixin implements Reloadable {
+public abstract class NarratorManagerMixin {
 
     @Shadow
     private Narrator narrator;
@@ -67,10 +66,10 @@ public abstract class NarratorManagerMixin implements Reloadable {
     @Shadow
     abstract void debugPrintMessage(String var1);
 
-    /**
-     * Handler for the mod configuration. Make the name distinct from the field in the "Narrator Configs Mod".
-     */
-    private ConfigHandler<NarrateChatModConfig> configNCM2;
+    @Shadow
+    private static NarratorMode getNarratorOption() {
+        throw new AssertionError("Shadowed method wrapper should not run");
+    }
 
     /**
      * Inject custom logic at the end of {@link NarratorManager#NarratorManager()} in order to initialize the config.
@@ -80,10 +79,6 @@ public abstract class NarratorManagerMixin implements Reloadable {
     @Inject(method = "<init>*", at = @At("RETURN"))
     public void onInit(final CallbackInfo ci) {
         LOGGER.info("This line is printed by the Narrate Chat Mod mixin!");
-
-        configNCM2 = new ConfigHandler<>(NarrateChatModConfig.class);
-        configNCM2.initialize();
-        configNCM2.registerSubscriber(this);
     }
 
     /**
@@ -103,12 +98,12 @@ public abstract class NarratorManagerMixin implements Reloadable {
             final UUID sender,
             final CallbackInfo ci) {
 
-        // If the mod is not enabled, exit
-        if (!configNCM2.get().isModEnabled()) {
+        // If the NarratorMode is anything other than the custom ALL_CHAT, exit without cancelling
+        if (!getNarratorOption().equals(Util.allChat())) {
             return;
         }
 
-        // Copied mostly verbatim from NarratorManager#onChatMessage
+        // Code copied mostly verbatim from NarratorManager#onChatMessage
         if (!narrator.active()) {
             debugPrintMessage(message.getString());
 
@@ -123,17 +118,24 @@ public abstract class NarratorManagerMixin implements Reloadable {
             debugPrintMessage(string);
 
             narrator.say(string, false);
-            // If the mixin has narrated chat, then cancel the Minecraft call to NarratorManager#onChatMessage
+            // If the mixin has performed narration, then cancel the Minecraft call to NarratorManager#onChatMessage
             ci.cancel();
         }
     }
 
-    @Override
-    public void reload() {
-        if (!narrator.active()) {
-            debugPrintMessage("Updated configuration: " + configNCM2.get());
-        } else {
-            narrator.say("Updated configuration: " + configNCM2.get(), false);
+    /**
+     * Inject a narration override at the head of {@link NarratorManager#narrate(String)}. The real method would always
+     * exit if the {@link NarratorMode} was CHAT, and all system messages which this mod cares about are already handled
+     * in {@link NarratorManager#onChatMessage(MessageType, Text, UUID)}, thus when the ALL_CHAT mode is active, this
+     * method should also exit and force the real method to be cancelled as well.
+     * 
+     * @param text Text to be conditionally narrated
+     * @param ci CallbackInfo used by SpongePowered
+     */
+    @Inject(method = "narrate(Ljava/lang/String;)V", at = @At("HEAD"), cancellable = true)
+    public void onNarrate(final String text, final CallbackInfo ci) {
+        if (getNarratorOption().equals(Util.allChat())) {
+            ci.cancel();
         }
     }
 }
