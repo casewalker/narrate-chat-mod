@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 /**
- *
+ * Mixin to add a new {@link NarratorMode}. Utilizing the {@link NarratorModeMixinHelperParent} class internally.
  *
  * @author Case Walker
  */
