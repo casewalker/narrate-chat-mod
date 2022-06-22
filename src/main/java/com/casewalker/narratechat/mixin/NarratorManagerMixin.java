@@ -24,6 +24,7 @@
 package com.casewalker.narratechat.mixin;
 
 import com.casewalker.narratechat.util.Util;
+import com.google.common.annotations.VisibleForTesting;
 import com.mojang.text2speech.Narrator;
 import net.minecraft.client.option.NarratorMode;
 import net.minecraft.client.util.NarratorManager;
@@ -68,7 +69,18 @@ public abstract class NarratorManagerMixin {
 
     @Shadow
     private static NarratorMode getNarratorOption() {
-        throw new AssertionError("Shadowed method wrapper should not run");
+        throw new AssertionError("Shadowed method wrapper 'getNarratorOption' should not run");
+    }
+
+    /**
+     * Wrapper method to make testing easy and provide the answer this mod cares about, whether the current narrator
+     * option is equal to the custom ALL_CHAT mode.
+     *
+     * @return The result of {@link #getNarratorOption()} == ALL_CHAT
+     */
+    @VisibleForTesting
+    boolean narratorModeIsAllChat() {
+        return getNarratorOption().equals(Util.allChat());
     }
 
     /**
@@ -98,8 +110,8 @@ public abstract class NarratorManagerMixin {
             final UUID sender,
             final CallbackInfo ci) {
 
-        // If the NarratorMode is anything other than the custom ALL_CHAT, exit without cancelling
-        if (!getNarratorOption().equals(Util.allChat())) {
+        // If the NarratorMode is anything other than the custom ALL_CHAT, return without cancelling
+        if (!narratorModeIsAllChat()) {
             return;
         }
 
@@ -134,7 +146,7 @@ public abstract class NarratorManagerMixin {
      */
     @Inject(method = "narrate(Ljava/lang/String;)V", at = @At("HEAD"), cancellable = true)
     public void onNarrate(final String text, final CallbackInfo ci) {
-        if (getNarratorOption().equals(Util.allChat())) {
+        if (narratorModeIsAllChat()) {
             ci.cancel();
         }
     }

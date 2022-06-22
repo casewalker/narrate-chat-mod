@@ -33,6 +33,11 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
+/**
+ *
+ *
+ * @author Case Walker
+ */
 @Mixin(NarratorMode.class)
 @Unique
 public abstract class NarratorModeMixin {
@@ -56,6 +61,7 @@ public abstract class NarratorModeMixin {
     /**
      * Shadow the internal enum field <code>field_18183</code> from the bytecode of {@link NarratorMode}.
      */
+    @SuppressWarnings("target")
     @Shadow
     @Final
     @Mutable
@@ -89,7 +95,7 @@ public abstract class NarratorModeMixin {
             final int internalId,
             final int id,
             final String name) {
-        throw new AssertionError("Invoked method wrapper should not run");
+        throw new AssertionError("Invoked method wrapper 'invokeInit' should not run");
     }
 
     /**
