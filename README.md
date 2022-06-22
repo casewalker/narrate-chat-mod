@@ -17,7 +17,7 @@ This mod should behave like that fourth option. Note that this mod is built on t
 ## Configuration
 
 The mod introduces a new narrator option inside the _Options..._ > _Accessibility Settings..._ > _Narrator_ settings,
-click through until the Narrator is set to _**Custom - All Chats**_.
+click through until the Narrator is set to "_**Custom - All Chats**_".
 
 ## License
 
