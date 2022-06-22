@@ -130,9 +130,9 @@ public abstract class NarratorManagerMixin {
             debugPrintMessage(string);
 
             narrator.say(string, false);
-            // If the mixin has performed narration, then cancel the Minecraft call to NarratorManager#onChatMessage
-            ci.cancel();
         }
+        // If the mixin has performed narration, then cancel the Minecraft call to NarratorManager#onChatMessage
+        ci.cancel();
     }
 
     /**
