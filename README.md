@@ -6,13 +6,16 @@ Minecraft comes with a builtin narrator. For this narrator, there are three narr
 * Narrates Chat
 * Narrates System
 
-Regardless of all other thoughts on this matter, there are some people who would like a fourth option. The "_Narrates 
-Chat_" option only narrates messages sent publicly through the chat between users. Whispers and system messages are not
-narrated. The "_Narrates System_" option narrates a large amount of system messages, including system messages which
-pass through the chat interface. A fourth option of narration could be to narrate all chat interface messages, whether
-they are public chat messages from users or whispers or system messages.
+Regardless of other thoughts on this matter, there are some people who would like a fourth option. The "_Narrates
+Chat_" option only narrates messages sent publicly through the Minecraft chat between users. Whispers and system
+messages (e.g. players joining or leaving, achievements, etc.) however are not narrated. The "_Narrates System_" option
+narrates a large amount of system messages, including all system messages which pass through the chat interface, but it
+adds a lot more narration which can also feel a bit too noisy. So a fourth option of narration could be to narrate all
+and only chat interface messages, whether they are public chat messages from users or whispers or system messages.
 
-This mod should behave like that fourth option. Note that this mod is built on top of [Fabric](https://fabricmc.net/).
+This mod should behave like that fourth option.
+
+Note that this mod is built on top of [Fabric](https://fabricmc.net/).
 
 ## Configuration
 
