@@ -24,79 +24,113 @@
 package com.casewalker.narratechat.mixin;
 
 import com.mojang.text2speech.Narrator;
+import net.minecraft.network.message.MessageType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Pair;
+import net.minecraft.util.registry.RegistryKey;
 import org.easymock.EasyMock;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.powermock.api.easymock.PowerMock;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-import static net.minecraft.network.MessageType.CHAT;
-import static net.minecraft.network.MessageType.SYSTEM;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static net.minecraft.network.message.MessageType.NarrationRule.Kind.CHAT;
+import static net.minecraft.network.message.MessageType.NarrationRule.Kind.SYSTEM;
 
 /**
  * Test functionality within the {@link NarratorManagerMixin}.
  *
  * @author Case Walker
  */
-class NarratorManagerMixinTest {
+@PrepareForTest({
+        MessageType.class,
+        MessageType.NarrationRule.class,
+        RegistryKey.class
+})
+@SuppressStaticInitializationFor("net.minecraft.util.registry.Registry")
+@RunWith(PowerMockRunner.class)
+public class NarratorManagerMixinTest {
 
-    private static final NarratorManagerMixinTestImpl narratorManagerMixin =
-            PowerMock.createPartialMock(NarratorManagerMixinTestImpl.class, "narratorModeIsAllChat");
+    private static NarratorManagerMixinTestImpl narratorManagerMixin;
+    private static MessageType chatType;
+    private static MessageType systemType;
 
-    private static final UUID UUID_VALUE = UUID.fromString("12345678-1234-1234-1234-123456789012");
+    @BeforeClass
+    public static void initialize() {
+        narratorManagerMixin =
+                PowerMock.createPartialMock(NarratorManagerMixinTestImpl.class, "narratorModeIsAllChat");
 
-    @BeforeEach
-    void initializeDependencies() {
+        // This remaining nonsense is because Mojang introduced "MessageType" as a Record (I believe serialized) for
+        // 1.19, and it proved to be very difficult to mock. Mockito complained, PowerMockRunner doesn't exist for
+        // JUnit5, so I had to downgrade to JUnit4, put the "add-exports" and "add-opens" in gradle, etc.
+        // This is copied from NarratorConfigsMod.
+        // It's giving depression. But now it should work.
+        PowerMock.mockStatic(RegistryKey.class);
+        EasyMock.expect(RegistryKey.of(EasyMock.anyObject(), EasyMock.anyObject())).andStubReturn(null);
+        PowerMock.replay(RegistryKey.class);
+
+        final Optional<MessageType.NarrationRule> chatRule = Optional.of(MessageType.NarrationRule.of(CHAT));
+        final Optional<MessageType.NarrationRule> systemRule = Optional.of(MessageType.NarrationRule.of(SYSTEM));
+        chatType = PowerMock.createMock(MessageType.class, Optional.empty(), Optional.empty(), chatRule);
+        systemType = PowerMock.createMock(MessageType.class, Optional.empty(), Optional.empty(), systemRule);
+
+        EasyMock.expect(chatType.narration()).andStubReturn(Optional.of(MessageType.NarrationRule.of(CHAT)));
+        EasyMock.expect(systemType.narration()).andStubReturn(Optional.of(MessageType.NarrationRule.of(SYSTEM)));
+        PowerMock.replayAll(chatType, systemType);
+
+    }
+
+    @Before
+    public void initializeDependencies() {
         EasyMock.reset(narratorManagerMixin);
     }
 
     @Test
-    @DisplayName("Nothing is narrated if the the narrator mode is not ALL_CHAT (onOnChatMessage)")
-    void testWrongMode() {
+//    @DisplayName("Nothing is narrated if the the narrator mode is not ALL_CHAT (onOnChatMessage)")
+    public void testWrongMode() {
         EasyMock.expect(narratorManagerMixin.narratorModeIsAllChat()).andStubReturn(false);
         EasyMock.replay(narratorManagerMixin);
         DummyNarrator narrator = new DummyNarrator();
         narrator.active = true;
         narratorManagerMixin.setNarrator(narrator);
 
-        narratorManagerMixin.onOnChatMessage(CHAT, Text.of("text2"), UUID_VALUE, new CallbackInfo("test", true));
+        narratorManagerMixin.onOnChatMessage(chatType, Text.of("text2"), null, new CallbackInfo("test", true));
 
         assertTrue(narrator.thingsSaid.isEmpty(),
                 "Narrator should not get any narrations if the narrator mode is wrong. Received: " +
-                        narrator.thingsSaid.stream().map(Pair::getLeft).collect(Collectors.toList()));
+                        narrator.thingsSaid.stream().map(Pair::getLeft).toList());
     }
 
     @Test
-    @DisplayName("Nothing is narrated if the narrator is not active (onOnChatMessage)")
-    void testNarratorInactive() {
+//    @DisplayName("Nothing is narrated if the narrator is not active (onOnChatMessage)")
+    public void testNarratorInactive() {
         EasyMock.expect(narratorManagerMixin.narratorModeIsAllChat()).andStubReturn(true);
         EasyMock.replay(narratorManagerMixin);
         DummyNarrator narrator = new DummyNarrator();
         narrator.active = false;
         narratorManagerMixin.setNarrator(narrator);
 
-        narratorManagerMixin.onOnChatMessage(CHAT, Text.of("text2"), UUID_VALUE, new CallbackInfo("test", true));
+        narratorManagerMixin.onOnChatMessage(chatType, Text.of("text2"), null, new CallbackInfo("test", true));
 
         assertTrue(narrator.thingsSaid.isEmpty(),
                 "Narrator should not get any narrations when narrator is not active. Received: " +
-                        narrator.thingsSaid.stream().map(Pair::getLeft).collect(Collectors.toList()));
+                        narrator.thingsSaid.stream().map(Pair::getLeft).toList());
     }
 
     @Test
-    @DisplayName("Narration succeeds (interrupt false) if the mod is enabled and narrator is active (onOnChatMessage)")
-    void testChatSucceeds() {
+//    @DisplayName("Narration succeeds (interrupt false) if the mod is enabled and narrator is active (onOnChatMessage)")
+    public void testChatSucceeds() {
         EasyMock.expect(narratorManagerMixin.narratorModeIsAllChat()).andReturn(true);
         EasyMock.replay(narratorManagerMixin);
         DummyNarrator narrator = new DummyNarrator();
@@ -104,7 +138,7 @@ class NarratorManagerMixinTest {
         narratorManagerMixin.setNarrator(narrator);
         CallbackInfo ci = new CallbackInfo("test", true);
 
-        narratorManagerMixin.onOnChatMessage(CHAT, Text.of("text"), UUID_VALUE, ci);
+        narratorManagerMixin.onOnChatMessage(chatType, Text.of("text"), null, ci);
 
         assertEquals(1, narrator.thingsSaid.size(), "Narrator should have received 1 narration");
         assertFalse(narrator.thingsSaid.get(0).getRight(), "Interrupt should be false for chat message");
@@ -112,9 +146,9 @@ class NarratorManagerMixinTest {
     }
 
     @Test
-    @DisplayName("System messages succeed (interrupt false) if the mod is enabled and narrator is active " +
-            "(onOnChatMessage)")
-    void testSystemSucceeds() {
+//    @DisplayName("System messages succeed (interrupt false) if the mod is enabled and narrator is active " +
+//            "(onOnChatMessage)")
+    public void testSystemSucceeds() {
         EasyMock.expect(narratorManagerMixin.narratorModeIsAllChat()).andReturn(true);
         EasyMock.replay(narratorManagerMixin);
         DummyNarrator narrator = new DummyNarrator();
@@ -122,7 +156,7 @@ class NarratorManagerMixinTest {
         narratorManagerMixin.setNarrator(narrator);
         CallbackInfo ci = new CallbackInfo("test", true);
 
-        narratorManagerMixin.onOnChatMessage(SYSTEM, Text.of("text"), UUID_VALUE, ci);
+        narratorManagerMixin.onOnChatMessage(systemType, Text.of("text"), null, ci);
 
         assertEquals(1, narrator.thingsSaid.size(), "Narrator should have received 1 narration");
         assertFalse(narrator.thingsSaid.get(0).getRight(), "Interrupt should be false even for a system message");
@@ -130,8 +164,8 @@ class NarratorManagerMixinTest {
     }
 
     @Test
-    @DisplayName("The overridden method should not be cancelled when the mode is not ALL_CHAT (onNarrate)")
-    void testNarrateWrongMode() {
+//    @DisplayName("The overridden method should not be cancelled when the mode is not ALL_CHAT (onNarrate)")
+    public void testNarrateWrongMode() {
         EasyMock.expect(narratorManagerMixin.narratorModeIsAllChat()).andReturn(false);
         EasyMock.replay(narratorManagerMixin);
         CallbackInfo ci = new CallbackInfo("test", true);
@@ -142,8 +176,8 @@ class NarratorManagerMixinTest {
     }
 
     @Test
-    @DisplayName("The overridden method should be cancelled when the mode is ALL_CHAT (onNarrate)")
-    void testNarrateRightMode() {
+//    @DisplayName("The overridden method should be cancelled when the mode is ALL_CHAT (onNarrate)")
+    public void testNarrateRightMode() {
         EasyMock.expect(narratorManagerMixin.narratorModeIsAllChat()).andReturn(true);
         EasyMock.replay(narratorManagerMixin);
         CallbackInfo ci = new CallbackInfo("test", true);
@@ -173,4 +207,11 @@ class NarratorManagerMixinTest {
         public boolean active() { return active; }
         public void destroy() {}
     }
+
+    /**
+     * Invert the assertion argument order because JUnit5 is better than JUnit4.
+     */
+    private void assertTrue(boolean b, String s) { Assert.assertTrue(s, b); }
+    private void assertFalse(boolean b, String s) { Assert.assertFalse(s, b); }
+    private void assertEquals(int x, int y, String s) { Assert.assertEquals(s, x, y); }
 }

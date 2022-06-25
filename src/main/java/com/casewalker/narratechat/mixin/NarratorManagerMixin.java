@@ -28,16 +28,15 @@ import com.google.common.annotations.VisibleForTesting;
 import com.mojang.text2speech.Narrator;
 import net.minecraft.client.option.NarratorMode;
 import net.minecraft.client.util.NarratorManager;
-import net.minecraft.network.MessageType;
+import net.minecraft.network.message.MessageSender;
+import net.minecraft.network.message.MessageType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.UUID;
 
 import static com.casewalker.narratechat.NarrateChatMod.LOGGER;
 
@@ -94,20 +93,20 @@ public abstract class NarratorManagerMixin {
     }
 
     /**
-     * Inject a narration override at the head of {@link NarratorManager#onChatMessage(MessageType, Text, UUID)}. Force
-     * it to narrate all chat and system messages (removing interrupts), and then skip the code of the real method.
+     * Inject a narration override at the head of {@link
+     * NarratorManager#onChatMessage(MessageType, Text, MessageSender)}. Force it to narrate all chat and system
+     * messages (removing interrupts), and then skip the code of the real method.
      *
-     * @param messageType Metadata about the narration text
-     * @param message     Text to optionally narrate from the Minecraft chat
-     * @param sender      Unused parameter from NarratorManager
-     * @param ci          CallbackInfo used by SpongePowered
+     * @param type Metadata about the narration text
+     * @param message Text to optionally narrate from the Minecraft chat
+     * @param sender Unused parameter from NarratorManager
+     * @param ci CallbackInfo used by SpongePowered
      */
-    @SuppressWarnings("CastCanBeRemovedNarrowingVariableType")
     @Inject(method = "onChatMessage", at = @At("HEAD"), cancellable = true)
     public void onOnChatMessage(
-            final MessageType messageType,
+            final MessageType type,
             final Text message,
-            final UUID sender,
+            final @Nullable MessageSender sender,
             final CallbackInfo ci) {
 
         // If the NarratorMode is anything other than the custom ALL_CHAT, return without cancelling
@@ -116,20 +115,15 @@ public abstract class NarratorManagerMixin {
         }
 
         // Code copied mostly verbatim from NarratorManager#onChatMessage
-        if (!narrator.active()) {
-            debugPrintMessage(message.getString());
-
+        if (!this.narrator.active()) {
+            this.debugPrintMessage(message.getString());
         } else {
-            final Object text2;
-            if (message instanceof TranslatableText && "chat.type.text".equals(((TranslatableText) message).getKey())) {
-                text2 = new TranslatableText("chat.type.text.narrate", ((TranslatableText) message).getArgs());
-            } else {
-                text2 = message;
-            }
-            final String string = ((Text) text2).getString();
-            debugPrintMessage(string);
-
-            narrator.say(string, false);
+            type.narration().ifPresent((narrationRule) -> {
+                        Text text2 = narrationRule.apply(message, sender);
+                        String string = text2.getString();
+                        this.debugPrintMessage(string);
+                        this.narrator.say(string, false);
+            });
         }
         // If the mixin has performed narration, then cancel the Minecraft call to NarratorManager#onChatMessage
         ci.cancel();
@@ -138,8 +132,8 @@ public abstract class NarratorManagerMixin {
     /**
      * Inject a narration override at the head of {@link NarratorManager#narrate(String)}. The real method would always
      * exit if the {@link NarratorMode} was CHAT, and all system messages which this mod cares about are already handled
-     * in {@link NarratorManager#onChatMessage(MessageType, Text, UUID)}, thus when the ALL_CHAT mode is active, this
-     * method should also exit and force the real method to be cancelled as well.
+     * in {@link NarratorManager#onChatMessage(MessageType, Text, MessageSender)}, thus when the ALL_CHAT mode is
+     * active, this method should also exit and force the real method to be cancelled as well.
      * 
      * @param text Text to be conditionally narrated
      * @param ci CallbackInfo used by SpongePowered
