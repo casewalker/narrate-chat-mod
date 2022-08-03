@@ -23,20 +23,21 @@
  */
 package com.casewalker.narratechat.mixin;
 
+import com.casewalker.narratechat.interfaces.ForcedNarratorManager;
 import com.casewalker.narratechat.util.Util;
 import com.google.common.annotations.VisibleForTesting;
 import com.mojang.text2speech.Narrator;
 import net.minecraft.client.option.NarratorMode;
 import net.minecraft.client.util.NarratorManager;
-import net.minecraft.network.message.MessageSender;
-import net.minecraft.network.message.MessageType;
 import net.minecraft.text.Text;
-import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.function.Supplier;
 
 import static com.casewalker.narratechat.NarrateChatMod.LOGGER;
 
@@ -58,16 +59,17 @@ import static com.casewalker.narratechat.NarrateChatMod.LOGGER;
  * @author Case Walker
  */
 @Mixin(NarratorManager.class)
-public abstract class NarratorManagerMixin {
+public abstract class NarratorManagerMixin implements ForcedNarratorManager {
 
     @Shadow
+    @Final
     private Narrator narrator;
 
     @Shadow
-    abstract void debugPrintMessage(String var1);
+    abstract protected void debugPrintMessage(String var1);
 
     @Shadow
-    private static NarratorMode getNarratorOption() {
+    private NarratorMode getNarratorOption() {
         throw new AssertionError("Shadowed method wrapper 'getNarratorOption' should not run");
     }
 
@@ -83,7 +85,7 @@ public abstract class NarratorManagerMixin {
     }
 
     /**
-     * Inject custom logic at the end of {@link NarratorManager#NarratorManager()} in order to initialize the config.
+     * Inject custom logic at the end of {@link NarratorManager#NarratorManager} in order to initialize the config.
      *
      * @param ci {@link CallbackInfo} used by SpongePowered
      */
@@ -94,46 +96,33 @@ public abstract class NarratorManagerMixin {
 
     /**
      * Inject a narration override at the head of {@link
-     * NarratorManager#onChatMessage(MessageType, Text, MessageSender)}. Force it to narrate all chat and system
+     * NarratorManager#narrateChatMessage(Supplier)}. Force it to narrate all chat and system
      * messages (removing interrupts), and then skip the code of the real method.
      *
-     * @param type Metadata about the narration text
-     * @param message Text to optionally narrate from the Minecraft chat
-     * @param sender Unused parameter from NarratorManager
+     * @param messageSupplier Text (supplied) to optionally narrate from the Minecraft chat
      * @param ci CallbackInfo used by SpongePowered
      */
-    @Inject(method = "onChatMessage", at = @At("HEAD"), cancellable = true)
-    public void onOnChatMessage(
-            final MessageType type,
-            final Text message,
-            final @Nullable MessageSender sender,
-            final CallbackInfo ci) {
+    @Inject(method = "narrateChatMessage", at = @At("HEAD"), cancellable = true)
+    public void onNarrateChatMessage(final Supplier<Text> messageSupplier, final CallbackInfo ci) {
 
-        // If the NarratorMode is anything other than the custom ALL_CHAT, return without cancelling
+        // If the NarratorMode is anything other than the custom ALL_CHAT, exit without cancelling
         if (!narratorModeIsAllChat()) {
             return;
         }
 
-        // Code copied mostly verbatim from NarratorManager#onChatMessage
-        if (!this.narrator.active()) {
-            this.debugPrintMessage(message.getString());
-        } else {
-            type.narration().ifPresent((narrationRule) -> {
-                        Text text2 = narrationRule.apply(message, sender);
-                        String string = text2.getString();
-                        this.debugPrintMessage(string);
-                        this.narrator.say(string, false);
-            });
-        }
-        // If the mixin has performed narration, then cancel the Minecraft call to NarratorManager#onChatMessage
+        String string = messageSupplier.get().getString();
+        this.debugPrintMessage(string);
+        this.narrator.say(string, false);
+
+        // If the mixin has performed narration, then cancel the Minecraft call to NarratorManager#narrateChatMessage
         ci.cancel();
     }
 
     /**
      * Inject a narration override at the head of {@link NarratorManager#narrate(String)}. The real method would always
      * exit if the {@link NarratorMode} was CHAT, and all system messages which this mod cares about are already handled
-     * in {@link NarratorManager#onChatMessage(MessageType, Text, MessageSender)}, thus when the ALL_CHAT mode is
-     * active, this method should also exit and force the real method to be cancelled as well.
+     * in {@link NarratorManager#narrateChatMessage(Supplier)}, thus when the ALL_CHAT mode is active, this method
+     * should also exit and force the real method to be cancelled as well.
      * 
      * @param text Text to be conditionally narrated
      * @param ci CallbackInfo used by SpongePowered
@@ -142,6 +131,13 @@ public abstract class NarratorManagerMixin {
     public void onNarrate(final String text, final CallbackInfo ci) {
         if (narratorModeIsAllChat()) {
             ci.cancel();
+        }
+    }
+
+    @Override
+    public void forceNarrateOnMode(final Text text) {
+        if (narratorModeIsAllChat()) {
+            this.narrator.say(text.getString(), false);
         }
     }
 }
