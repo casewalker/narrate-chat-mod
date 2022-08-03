@@ -30,8 +30,7 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 	include(modImplementation("com.casewalker:mod-utils:${project.casewalker_modutils_version}"))
-	testImplementation "junit:junit:${project.junit_version}"
-	testImplementation "org.junit.vintage:junit-vintage-engine:${project.junit_jupiter_version}"
+	testImplementation "org.junit.jupiter:junit-jupiter:${project.junit_jupiter_version}"
 	testImplementation "org.powermock:powermock-api-easymock:${project.powermock_powermock_version}"
 	testImplementation "org.powermock:powermock-module-junit4:${project.powermock_powermock_version}"
 	testImplementation "org.easymock:easymock:${project.easymock_easymock_version}"
@@ -87,11 +86,5 @@ publishing {
 }
 
 test {
-	jvmArgs(
-			"--add-exports", "java.xml/jdk.xml.internal=ALL-UNNAMED",
-			"--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED",
-			"--add-opens",   "java.base/java.util.regex=ALL-UNNAMED",
-			"--add-opens",   "java.base/java.util.stream=ALL-UNNAMED"
-	)
 	useJUnitPlatform()
 }

@@ -110,6 +110,7 @@ public abstract class NarratorManagerMixin implements ForcedNarratorManager {
             return;
         }
 
+        // Copied from NarratorManager#narrateChatMessage. TODO Why is there no 'this.narrator.active()' check?
         String string = messageSupplier.get().getString();
         this.debugPrintMessage(string);
         this.narrator.say(string, false);
@@ -123,7 +124,7 @@ public abstract class NarratorManagerMixin implements ForcedNarratorManager {
      * exit if the {@link NarratorMode} was CHAT, and all system messages which this mod cares about are already handled
      * in {@link NarratorManager#narrateChatMessage(Supplier)}, thus when the ALL_CHAT mode is active, this method
      * should also exit and force the real method to be cancelled as well.
-     * 
+     *
      * @param text Text to be conditionally narrated
      * @param ci CallbackInfo used by SpongePowered
      */
