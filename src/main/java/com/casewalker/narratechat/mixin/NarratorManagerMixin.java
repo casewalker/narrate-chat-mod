@@ -111,7 +111,7 @@ public abstract class NarratorManagerMixin implements ForcedNarratorManager {
         }
 
         // Copied from NarratorManager#narrateChatMessage. TODO Why is there no 'this.narrator.active()' check?
-        String string = messageSupplier.get().getString();
+        final String string = messageSupplier.get().getString();
         this.debugPrintMessage(string);
         this.narrator.say(string, false);
 

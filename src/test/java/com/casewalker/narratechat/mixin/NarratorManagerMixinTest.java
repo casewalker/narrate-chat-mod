@@ -26,6 +26,7 @@ package com.casewalker.narratechat.mixin;
 import com.mojang.text2speech.Narrator;
 import net.minecraft.text.Text;
 import net.minecraft.util.Pair;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,11 @@ public class NarratorManagerMixinTest {
     private static final NarratorManagerMixinTestImpl narratorManagerMixin = new NarratorManagerMixinTestImpl();
     private static final DummyNarrator narrator = new DummyNarrator();
 
+    @BeforeAll
+    static void setTheNarrator() {
+        Whitebox.setInternalState(narratorManagerMixin, "narrator", narrator);
+    }
+
     @BeforeEach
     void resetDependencies() {
         narratorManagerMixin.isAllChat = false;
@@ -61,7 +67,6 @@ public class NarratorManagerMixinTest {
     void testWrongMode() {
         narratorManagerMixin.isAllChat = false;
         narrator.active = true;
-        narratorManagerMixin.setNarrator(narrator);
 
         narratorManagerMixin.onNarrateChatMessage(() -> Text.of("text2"), new CallbackInfo("test", true));
 
@@ -75,7 +80,6 @@ public class NarratorManagerMixinTest {
     void testNarratorInactive() {
         narratorManagerMixin.isAllChat = true;
         narrator.active = false;
-        narratorManagerMixin.setNarrator(narrator);
 
         narratorManagerMixin.onNarrateChatMessage(() -> Text.of("text2"), new CallbackInfo("test", true));
 
@@ -88,7 +92,6 @@ public class NarratorManagerMixinTest {
     void testChatSucceeds() {
         narratorManagerMixin.isAllChat = true;
         narrator.active = true;
-        narratorManagerMixin.setNarrator(narrator);
         CallbackInfo ci = new CallbackInfo("test", true);
 
         narratorManagerMixin.onNarrateChatMessage(() -> Text.of("text"), ci);
@@ -104,7 +107,6 @@ public class NarratorManagerMixinTest {
     void testSystemSucceeds() {
         narratorManagerMixin.isAllChat = true;
         narrator.active = true;
-        narratorManagerMixin.setNarrator(narrator);
         CallbackInfo ci = new CallbackInfo("test", true);
 
         narratorManagerMixin.onNarrateChatMessage(() -> Text.of("text"), ci);
@@ -163,7 +165,6 @@ public class NarratorManagerMixinTest {
      */
     public static class NarratorManagerMixinTestImpl extends NarratorManagerMixin {
         public void debugPrintMessage(String var1) {}
-        void setNarrator(Narrator narrator) { Whitebox.setInternalState(this, "narrator", narrator); }
         public boolean isAllChat;
         boolean narratorModeIsAllChat() { return isAllChat; }
     }

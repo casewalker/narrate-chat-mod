@@ -32,7 +32,6 @@ dependencies {
 	include(modImplementation("com.casewalker:mod-utils:${project.casewalker_modutils_version}"))
 	testImplementation "org.junit.jupiter:junit-jupiter:${project.junit_jupiter_version}"
 	testImplementation "org.powermock:powermock-api-easymock:${project.powermock_powermock_version}"
-	testImplementation "org.powermock:powermock-module-junit4:${project.powermock_powermock_version}"
 	testImplementation "org.easymock:easymock:${project.easymock_easymock_version}"
 }
 
