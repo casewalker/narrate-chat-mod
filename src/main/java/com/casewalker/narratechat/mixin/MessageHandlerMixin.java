@@ -34,8 +34,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static com.casewalker.narratechat.NarrateChatMod.LOGGER;
-
 /**
  * Mixin targeting the {@link MessageHandler} class to allow system messages to be narrated properly by this mod.
  *
@@ -50,7 +48,7 @@ public abstract class MessageHandlerMixin {
 
     /**
      * Inject a narration override at the end of {@link MessageHandler#onGameMessage(Text, boolean)} to ensure that game
-     * messages which are correctly handled by the mod.
+     * messages are correctly handled by the mod.
      * 
      * @param message Text to be conditionally narrated
      * @param overlay Boolean used in the parent method
